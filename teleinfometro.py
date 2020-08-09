@@ -45,6 +45,7 @@ class powerObj:
     self.power_avg  = 0 # Average power
     self.tick_ctr   = 0 # Number of value added
     self.power_peak = 0 # Top value recorded
+    self.base       = 0 # Base (Total usage)
 
   def reset(self):
     """ Reset stats
@@ -75,6 +76,12 @@ class powerObj:
       self.power_peak = power_tick
     return True
 
+  def update_base(self, current_base):
+    """ Update base
+    """
+    self.base = current_base
+    return True
+
   def influxdb_write(self):
     """ Send data into influxdb
     """
@@ -87,13 +94,21 @@ class powerObj:
       url = influxdb_host,
       data = influxdb_data
     )
-    print_debug('Influxdb write return code: ' + str(influxdb_post.status_code))
+    print_debug('(instant_poser) Influxdb write return code: ' + str(influxdb_post.status_code))
+    influxdb_data = 'base,location=' + cfg_location + ' value=' + str(int(self.base)) + ' ' + str(current_time)
+    influxdb_post = requests.post(
+      url = influxdb_host,
+      data = influxdb_data
+    )
+    print_debug('(base) Influxdb write return code: ' + str(influxdb_post.status_code))
     return True
 
 ################
 ### Main
 ################
 my_power = powerObj()
+
+avg_bucket_cnt = 0
 
 while True:
   # Read serial port for teleinfo data, line by line
@@ -104,8 +119,14 @@ while True:
     print_debug('Conso: ' + str(current_power))
     my_power.add_current_power(current_power)
     my_power.debug_flush()
-    my_power.influxdb_write()
-    my_power.reset()
 
   if info_line.startswith('BASE'):
-    pass #ToDo
+    current_base = int(info_line.split(" ")[1])
+    print_debug('Base: ' + str(current_base))
+    my_power.update_base(current_base)
+
+  avg_bucket_cnt = avg_bucket_cnt + 1
+  if avg_bucket_cnt == cfg_avg_bucket_size:
+    my_power.influxdb_write()
+    my_power.reset()
+    avg_bucket_cnt = 0
