@@ -7,10 +7,11 @@ from datetime import datetime
 ################
 ### Settings
 ################
-cfg_serial_port   = '/dev/ttyUSB0'
-cfg_influxdb_host = 'http://influxdb.lan:8086/write?db=teleinfometro'
-cfg_location      = 'myhouse'
-cfg_debug         = False
+cfg_serial_port     = '/dev/ttyUSB0'
+cfg_influxdb_host   = 'http://influxdb.lan:8086/write?db=teleinfometro'
+cfg_location        = 'myhouse'
+cfg_debug           = False
+cfg_avg_bucket_size = 10
 
 ################
 ### Initialize teleinfo serial port
